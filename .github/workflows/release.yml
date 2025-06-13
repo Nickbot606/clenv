@@ -41,11 +41,11 @@ jobs:
         run: |
           cargo build --release --target ${{ matrix.target }}
           mkdir -p dist
-          cp target/${{ matrix.target }}/release/lwbuild dist/lwbuild-${{ matrix.platform }}-${{ matrix.arch }}
+          cp target/${{ matrix.target }}/release/clenv dist/clenv-${{ matrix.platform }}-${{ matrix.arch }}
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/lwbuild-${{ matrix.platform }}-${{ matrix.arch }}
+          files: dist/clenv-${{ matrix.platform }}-${{ matrix.arch }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
