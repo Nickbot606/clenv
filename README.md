@@ -1,8 +1,8 @@
 # *clenv* - Clean environment
 This is a small command line tool which is used to maintain many environmental files and configurations. 
 
-# Why?
-This project was created with the intent of having many contributors on a single project which struggle maintaining keys, specific configurations, or wrangling particuarly fickle  repositories. 
+# Motivation
+This project was created with the intent of alleviating the stress on teams which have an offline first /locally test attitude with many configurations and branches with interface drift. 
 
 # Installation
 
@@ -24,10 +24,11 @@ The way I like to use this tool is to use the Namespace as a project, then each 
 ## Configuration
 *clenv* is not free from having confgiruations itself, however these are kept to a minimum in order to maintain a semblance of state management. All of these keys can be changed remotely via the `cfg` argument.
 This configuration file can be found in `~/.config/clenv`
+
 | name | example | description |
 | --- | --- | --- |
 | db | db="/path/to/db/" | Location of rocksdb folder |
-| ns | ns="current_namespace" | Currently selected namepace |
+| ns | ns="current_namespace" | Currently selected namepace (this can also be changed with the `clenv ns` command |
 | pub | pub="/path/to/.pub" | Location of public key on local machine |
 | priv | priv="/path/to/.crt" | Location of the private key on local machine |
 
