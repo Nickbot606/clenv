@@ -27,6 +27,7 @@ This configuration file can be found in the binary's location.
 | name | example | description |
 | --- | --- | --- |
 | db | db="/path/to/db/" | Location of rocksdb folder |
+| ns | ns="current_namespace" | Currently selected namepace |
 | pub | pub="/path/to/.pub" | Location of public key on local machine |
 | priv | priv="/path/to/.crt" | Location of the private key on local machine |
 
