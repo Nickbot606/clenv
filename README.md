@@ -39,7 +39,7 @@ This configuration file can be found in `~/.config/clenv`
 | add | clenv add [path to .pub file] | clenv add "keys.pub" | adds a public key to add the users' keys | 
 | show | clenv show [none] | clenv show | shows the currently selected database, users who have access, and available namespaces | 
 | cfg | clenv cfg [name of key] [argument for keys] | clenv cfg --db "path/to/db" | changes a specific configuration remotely. (Putting just clenv cfg will list current configuration) |
-| ns | clenv ns [name of namespace] | clenv ns "ns" | chagnes the currently selected namespace |
+| ns | clenv ns [name of namespace] | clenv ns "ns" | changes the currently selected namespace |
 | dump | clenv dump [name space name] [name of ouptut file] | clenv dump name_of_db | dumps all blocks into individual env files from the namespace to current working directory |
 | write | clenv write [path to .env] [name of blob] | clenv write "./.env" "default_env" | writes the selected file to the currently selected namespace with a name of your choosing. If you match a blob name exactly, it will overwrite said blob | 
 
