@@ -23,7 +23,7 @@ The way I like to use this tool is to use the Namespace as a project, then each 
 # Usage
 ## Configuration
 *clenv* is not free from having confgiruations itself, however these are kept to a minimum in order to maintain a semblance of state management. All of these keys can be changed remotely via the `cfg` argument.
-This configuration file can be found in the binary's location.
+This configuration file can be found in `~/.config/clenv`
 | name | example | description |
 | --- | --- | --- |
 | db | db="/path/to/db/" | Location of rocksdb folder |
@@ -35,8 +35,9 @@ This configuration file can be found in the binary's location.
 | name | interface | example | description |
 | --- | --- | --- | --- |
 | init | clenv init [none] | clenv init --name name_of_db | creates a new environmental database |
-| add | clenv add [path to .pub file] | clenv add keys.pub | adds a public key to envrpt the receipients' keys | 
+| add | clenv add [path to .pub file] | clenv add "keys.pub" | adds a public key to add the users' keys | 
 | show | clenv show [none] | clenv show | shows the currently selected database, users who have access, and available namespaces | 
 | cfg | clenv cfg [name of key] [argument for keys] | clenv cfg --db "path/to/db" | changes a specific configuration which is located |
-| dump | clenv dump [name space name] [name of ouptut file] | clenv dump name_of_db "out.env" | dumps all blocks into individual env files to current working directory |
-| write | clenv write [names space name] [name of blob] | clenv write ns |
+| ns | clenv ns "name of namespace" | chagnes the currently selected namespace |
+| dump | clenv dump [name space name] [name of ouptut file] | clenv dump name_of_db | dumps all blocks into individual env files from the namespace to current working directory |
+| write | clenv write [path to .env] [name of blob] | clenv write "./.env" "default_env" | writes the selected file to the currently selected namespace with a name of your choosing | 
