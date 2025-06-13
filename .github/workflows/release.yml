@@ -5,22 +5,30 @@ on:
     tags:
       - "v*.*.*"
 
+permissions:
+  contents: write  # 🔥 Required to create releases and upload assets
+
 jobs:
   build:
-    runs-on: ubuntu-latest
-
     strategy:
       matrix:
         include:
-          - target: x86_64-unknown-linux-gnu
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
             platform: linux
             arch: x86_64
-          - target: x86_64-apple-darwin
+
+          - os: macos-latest
+            target: x86_64-apple-darwin
             platform: macos
             arch: x86_64
-          - target: aarch64-apple-darwin
+
+          - os: macos-latest
+            target: aarch64-apple-darwin
             platform: macos
             arch: aarch64
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout
@@ -33,11 +41,11 @@ jobs:
         run: |
           cargo build --release --target ${{ matrix.target }}
           mkdir -p dist
-          cp target/${{ matrix.target }}/release/clenv dist/clenv-${{ matrix.platform }}-${{ matrix.arch }}
-      
+          cp target/${{ matrix.target }}/release/lwbuild dist/lwbuild-${{ matrix.platform }}-${{ matrix.arch }}
+
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/clenv-${{ matrix.platform }}-${{ matrix.arch }}
+          files: dist/lwbuild-${{ matrix.platform }}-${{ matrix.arch }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
