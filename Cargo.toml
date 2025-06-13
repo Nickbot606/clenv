@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 clap = "4.5.40"
 rage = "0.11.1"
+rocksdb = "0.23.0"
