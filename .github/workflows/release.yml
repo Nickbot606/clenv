@@ -31,6 +31,7 @@ jobs:
 
       - name: Build binary
         run: |
+          cd clenv
           cargo build --release --target ${{ matrix.target }}
           mkdir -p dist
           cp target/${{ matrix.target }}/release/clenv dist/clenv-${{ matrix.platform }}-${{ matrix.arch }}
