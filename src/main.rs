@@ -1,9 +1,14 @@
-mod db_mod;
-use db_mod::DbWrapper;
+/* 
+1. Configuration CRUD2. Configuration CRUD
+2. Namespace entry state management
+3. .env CRUD
+4. encryption
+*/
 
 mod args;
-use args::Args;
+mod db;
 
 fn main() {
-
+    args::args::Args::tst();
+    db::keys::keyCrud::init(String::from("Test"));
 }
