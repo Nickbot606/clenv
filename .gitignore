@@ -22,3 +22,5 @@ target/
 
 # Organization for rapid testing
 mydb/
+*.pem
+*.pub
