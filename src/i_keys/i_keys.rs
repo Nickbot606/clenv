@@ -24,7 +24,7 @@ impl i_keys {
 
     // Standard encryption implementation
    pub fn encrypt(
-        message: &[u8], //
+        message: &[u8],
         recipients: &[(String, RsaPublicKey)],
     ) -> Result<(Vec<u8>, [u8; 12], HashMap<String, Vec<u8>>), CryptoError> {
         let mut rng = OsRng;
@@ -63,4 +63,24 @@ impl i_keys {
         Ok(decrypted)
     }
 
+}
+
+// Extra interface for adding recipients after the text has already been encrypted
+pub struct EncryptedValue {
+    pub ciphertext: Vec<u8>,
+    pub nonce: [u8; 12],
+    pub key_shares: HashMap<String, Vec<u8>>,
+    pub raw_aes_key: aes_gcm::Key<Aes256Gcm>, 
+}
+
+impl EncryptedValue {
+    pub fn add_recipient(&mut self, name: &str, pubkey: &RsaPublicKey) -> Result<(), CryptoError> {
+        let encrypted = pubkey.encrypt(
+            &mut OsRng, 
+            Oaep::new::<Sha256>(), 
+            self.raw_aes_key.as_slice()
+        )?;
+        self.key_shares.insert(name.to_string(), encrypted);
+        Ok(())
+    }
 }

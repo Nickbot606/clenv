@@ -1,7 +1,3 @@
-use base64::engine::general_purpose::STANDARD;
-use base64::Engine as _;
-use rsa::{ RsaPrivateKey, RsaPublicKey};
-use rand::rngs::OsRng;
 use std::error::Error;
 
 mod i_keys;
@@ -12,6 +8,6 @@ mod config;
 use config::config::Config as Config;
 
 fn main() -> Result<(), Box<dyn Error>> {
-
+    
     Ok(())
 }
