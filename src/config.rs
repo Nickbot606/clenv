@@ -1,2 +1,2 @@
 pub mod config;
-use config::Config as Config;
+pub use config::Config as conf;

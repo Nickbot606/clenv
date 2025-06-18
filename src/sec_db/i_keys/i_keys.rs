@@ -21,7 +21,7 @@ pub enum CryptoError {
 
 // interface for key handling and management
 impl i_keys {
-
+    
     // Standard encryption implementation
    pub fn encrypt(
         message: &[u8],

@@ -9,6 +9,7 @@ pub struct Config {
 }
 
 impl Config {
+
     pub fn read() -> Result<Self, Box<dyn Error>> {
         let config_file = dirs::config_dir()
             .ok_or("Could not determine config directory")?
