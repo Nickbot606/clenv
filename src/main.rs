@@ -1,8 +1,11 @@
-use clap::{command, Command, Arg, Parser};
+use clap::{Arg, Command, Parser, command};
 use colored::*;
 
+mod config;
+use config::conf;
+
 mod sec_db;
-use sec_db::SecDb;
+// use sec_db::SecDb;
 
 mod command_factory;
 
@@ -29,18 +32,18 @@ fn main() {
             "'myapp init' was used, name is: {:?}",
             sub_matches.get_one::<String>("name")
         ),
+        Some(("show", _sub_matches)) => {
+            let _ = conf::read();
+        }
         _ => unreachable!("Exhausted list of subcommands and subcommand_required prevents `None`"),
     }
 }
 
-
 // fn main() -> Result<(), Box<dyn Error>> {
 
-    
 //     // Initalize the database
 //     let temp = SecDb::new("./path");
 //     temp.list_cf_formatted("keyring");
-
 
 //     Ok(())
 // }

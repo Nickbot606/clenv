@@ -1,6 +1,6 @@
-use rocksdb::{DB, ColumnFamilyDescriptor, Options};
-use std::error::Error;
+use rocksdb::{ColumnFamilyDescriptor, DB, Options};
 use std::collections::HashMap;
+use std::error::Error;
 use std::path::Path;
 
 // Extra interface for adding recipients after the text has already been encrypted
@@ -8,14 +8,14 @@ use std::path::Path;
 //     pub ciphertext: Vec<u8>,
 //     pub nonce: [u8; 12],
 //     pub key_shares: HashMap<String, Vec<u8>>,
-//     pub raw_aes_key: aes_gcm::Key<Aes256Gcm>, 
+//     pub raw_aes_key: aes_gcm::Key<Aes256Gcm>,
 // }
 
 // impl EncryptedValue {
 //     pub fn add_recipient(&mut self, name: &str, pubkey: &RsaPublicKey) -> Result<(), CryptoError> {
 //         let encrypted = pubkey.encrypt(
-//             &mut OsRng, 
-//             Oaep::new::<Sha256>(), 
+//             &mut OsRng,
+//             Oaep::new::<Sha256>(),
 //             self.raw_aes_key.as_slice()
 //         )?;
 //         self.key_shares.insert(name.to_string(), encrypted);
@@ -24,19 +24,18 @@ use std::path::Path;
 // }
 
 pub struct SecDb {
-    db : DB,
-
+    db: DB,
 }
 
 impl SecDb {
     /*
-        initalizes the database with the following schema:
-        {
-            keyring: {
-                "name":"value"
-            }
-        }
-     */
+       initalizes the database with the following schema:
+       {
+           keyring: {
+               "name":"value"
+           }
+       }
+    */
     pub fn new(path: &str) -> SecDb {
         let mut db_opts = Options::default();
         db_opts.create_if_missing(true);
@@ -70,10 +69,7 @@ impl SecDb {
         for item in iter {
             match item {
                 Ok((key, _value)) => {
-                    println!(
-                        "{}",
-                        String::from_utf8_lossy(&key)
-                    );
+                    println!("{}", String::from_utf8_lossy(&key));
                 }
                 Err(e) => {
                     eprintln!("Iteration error: {}", e);

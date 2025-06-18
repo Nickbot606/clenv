@@ -28,8 +28,7 @@ This configuration file can be found in `~/.config/clenv`
 | name | example | description |
 | --- | --- | --- |
 | db | db="/path/to/db/" | Location of rocksdb folder |
-| ns | ns="current_namespace" | Currently selected namepace (this can also be changed with the `clenv ns` command |
-| pub | pub="/path/to/.pub" | Location of public key on local machine |
+| ns | ns="current_namespace" | Currently selected namepace (this can also be changed with the `clenv ns` command) |
 | priv | priv="/path/to/.crt" | Location of the private key on local machine |
 
 ## Arguments and Examples
