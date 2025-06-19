@@ -1,11 +1,11 @@
-use clap::{Arg, Command, Parser, command};
+use clap::{Command, Parser, command};
 use colored::*;
 
 mod config;
 use config::conf;
 
 mod sec_db;
-// use sec_db::SecDb;
+use sec_db::SecDb;
 
 mod command_factory;
 
@@ -25,17 +25,24 @@ fn main() {
         matches = matches.subcommand(comms);
     }
 
+    let confi = match conf::load() {
+        Ok(cfg) => {
+            cfg
+        },
+        Err(e) => {
+            eprintln!("Configuration file not found. Creating one...");
+            conf::init().expect("Failed to initialize config")
+        }
+    };
+
     let parser = matches.get_matches();
 
     match parser.subcommand() {
-        Some(("db", sub_matches)) => println!(
-            "'myapp init' was used, name is: {:?}",
-            sub_matches.get_one::<String>("name")
-        ),
-        Some(("show", _sub_matches)) => {
-            let _ = conf::read();
-        }
-        _ => unreachable!("Exhausted list of subcommands and subcommand_required prevents `None`"),
+        Some(("cfg", sub_matches)) => {
+            confi.list_all();
+            
+        },
+        _ => unreachable!("Exhausted list of subcommands"),
     }
 }
 

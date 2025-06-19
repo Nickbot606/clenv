@@ -1,7 +1,7 @@
 use rocksdb::{ColumnFamilyDescriptor, DB, Options};
 use std::collections::HashMap;
 use std::error::Error;
-use std::path::Path;
+use std::path::PathBuf;
 
 // Extra interface for adding recipients after the text has already been encrypted
 // pub struct EncryptedValue {
@@ -36,14 +36,14 @@ impl SecDb {
            }
        }
     */
-    pub fn new(path: &str) -> SecDb {
+    pub fn new(path: PathBuf) -> SecDb {
         let mut db_opts = Options::default();
         db_opts.create_if_missing(true);
         db_opts.create_missing_column_families(true);
 
-        if Path::new(path).exists() {
+        if path.exists() {
             println!("Database already exists");
-            let cfs = rocksdb::DB::list_cf(&db_opts, path).unwrap();
+            let cfs = rocksdb::DB::list_cf(&db_opts, path.clone()).unwrap();
             let cf_descriptors = cfs
                 .iter()
                 .map(|name| ColumnFamilyDescriptor::new(name, Options::default()))
@@ -53,12 +53,12 @@ impl SecDb {
             return SecDb { db };
         }
 
-        let mut db = DB::open(&db_opts, path).unwrap();
+        let mut db = DB::open(&db_opts, &path).unwrap();
         db.create_cf("keyring", &Options::default()).unwrap();
         let cf = db.cf_handle("keyring").unwrap();
         db.put_cf(cf, "name", "value").unwrap();
 
-        println!("Created database at {}", path);
+        println!("Created database at {}", path.display().to_string());
         SecDb { db }
     }
 
