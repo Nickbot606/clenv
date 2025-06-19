@@ -32,11 +32,6 @@ impl SubCommand {
 pub fn add_all_comm() -> Vec<Command> {
     vec![
         SubCommand::new(
-            "db",
-            "Creates or sets your current database",
-            vec![("name", true, EV::NAME)],
-        ),
-        SubCommand::new(
             "add",
             "adds a public key to add the users\' keys",
             vec![("name", true, EV::NAME), ("filepath", true, EV::PATH)],
@@ -47,13 +42,13 @@ pub fn add_all_comm() -> Vec<Command> {
             vec![],
         ),
         SubCommand::new(
-            "cfg",
+            "cfg", 
             "changes a specific configuration remotely.",
-            vec![("config_name", false, EV::NAME)],
+            vec![("key", false, EV::NAME), ("value", false, EV::NAME)],
         ),
         SubCommand::new(
             "ns",
-            "changes the currently selected namespace.",
+            "shows current namespace, and entries",
             vec![("namespace", false, EV::NAME)],
         ),
         SubCommand::new(

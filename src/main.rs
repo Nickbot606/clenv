@@ -25,7 +25,7 @@ fn main() {
         matches = matches.subcommand(comms);
     }
 
-    let confi = match conf::load() {
+    let mut confi = match conf::load() {
         Ok(cfg) => {
             cfg
         },
@@ -39,10 +39,34 @@ fn main() {
 
     match parser.subcommand() {
         Some(("cfg", sub_matches)) => {
-            confi.list_all();
+            let key = sub_matches.get_one::<String>("key");
+            let value = sub_matches.get_one::<String>("value");
             
+            match (key, value) {
+                (Some(k), Some(v)) => {
+                    confi.set(k, v);
+                    println!("Set {} = {}", k, v);
+                },
+                (Some(k), None) => {
+                    match confi.get(k) {
+                        Some(v) => println!("{} = {}", k, v),
+                        None => println!("Key '{}' not found", k),
+                    }
+                },
+                (None, None) => {
+                    println!("Listing all config entries:");
+                    confi.list_all();
+                },
+                (None, Some(_)) => {
+                    eprintln!("Error: value provided without key");
+                }
+            }
         },
-        _ => unreachable!("Exhausted list of subcommands"),
+        
+        _ => {
+            let db = SecDb::new(&confi.get("db").unwrap());
+            unreachable!("Exhausted list of subcommands");
+        }
     }
 }
 
