@@ -1,49 +1,56 @@
+use base64::engine::Config;
 use rocksdb::{ColumnFamilyDescriptor, DB, Options};
 use std::collections::HashMap;
-use std::error::Error;
 use std::path::Path;
+use crate::sec_db::pairs;
+use aes_gcm::Aes256Gcm;
+use rsa::{RsaPublicKey, RsaPrivateKey, Oaep};
+use rand::rngs::OsRng;
+use crate::sec_db::i_keys::CryptoError;
+use sha2::Sha256;
+use crate::config::config::Config as Conf;
+use rsa::pkcs8::EncodePublicKey;
 
 // Extra interface for adding recipients after the text has already been encrypted
-// pub struct EncryptedValue {
-//     pub ciphertext: Vec<u8>,
-//     pub nonce: [u8; 12],
-//     pub key_shares: HashMap<String, Vec<u8>>,
-//     pub raw_aes_key: aes_gcm::Key<Aes256Gcm>,
-// }
+pub struct EncryptedValue {
+    pub ciphertext: Vec<u8>,
+    pub nonce: [u8; 12],
+    pub key_shares: HashMap<String, Vec<u8>>,
+    pub raw_aes_key: aes_gcm::Key<Aes256Gcm>,
+}
 
-// impl EncryptedValue {
-//     pub fn add_recipient(&mut self, name: &str, pubkey: &RsaPublicKey) -> Result<(), CryptoError> {
-//         let encrypted = pubkey.encrypt(
-//             &mut OsRng,
-//             Oaep::new::<Sha256>(),
-//             self.raw_aes_key.as_slice()
-//         )?;
-//         self.key_shares.insert(name.to_string(), encrypted);
-//         Ok(())
-//     }
-// }
+impl EncryptedValue {
+    pub fn add_recipient(&mut self, name: &str, pubkey: &RsaPublicKey) -> Result<(), CryptoError> {
+        let encrypted = pubkey.encrypt(
+            &mut OsRng,
+            Oaep::new::<Sha256>(),
+            self.raw_aes_key.as_slice()
+        )?;
+        self.key_shares.insert(name.to_string(), encrypted);
+        Ok(())
+    }
+}
 
 pub struct SecDb {
     db: DB,
 }
 
 impl SecDb {
-    /*
-       initalizes the database with the following schema:
-       {
-           keyring: {
-               "name":"value"
-           }
-       }
-    */
-    pub fn new(path: &str) -> SecDb {
+    pub fn new(conf: Conf) -> SecDb {
         let mut db_opts = Options::default();
         db_opts.create_if_missing(true);
         db_opts.create_missing_column_families(true);
 
-        if Path::new(path).exists() {
-            println!("Database already exists");
-            let cfs = rocksdb::DB::list_cf(&db_opts, path).unwrap();
+        let path = conf
+            .get("db")
+            .expect("Missing 'db' in config");
+
+        let name = conf
+            .get("name")
+            .expect("Could not find private_key");
+
+        if Path::new(&path).exists() {
+            let cfs = rocksdb::DB::list_cf(&db_opts, &path).unwrap();
             let cf_descriptors = cfs
                 .iter()
                 .map(|name| ColumnFamilyDescriptor::new(name, Options::default()))
@@ -53,12 +60,15 @@ impl SecDb {
             return SecDb { db };
         }
 
-        let mut db = DB::open(&db_opts, path).unwrap();
+        let mut db = DB::open(&db_opts, &path).unwrap();
         db.create_cf("keyring", &Options::default()).unwrap();
-        let cf = db.cf_handle("keyring").unwrap();
-        db.put_cf(cf, "name", "value").unwrap();
 
-        println!("Created database at {}", path);
+        let cf = db.cf_handle("keyring").unwrap();
+        let keyPair = pairs::generate_key_pair(&name);
+
+        db.put_cf(cf, name, keyPair.unwrap().1.to_public_key_pem(Default::default()).unwrap()).unwrap();
+
+        println!("Created database at {}", &path);
         SecDb { db }
     }
 

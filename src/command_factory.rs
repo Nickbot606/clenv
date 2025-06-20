@@ -38,18 +38,13 @@ pub fn add_all_comm() -> Vec<Command> {
         ),
         SubCommand::new(
             "show",
-            "shows the currently selected database, users who have access, and available namespaces",
-            vec![],
+            "shows the currently selected database, users who have access, and available namespaces. Put the name of the namespace to instead list the namespace from a different namespace.",
+            vec![("namespace", false, EV::NAME)],
         ),
         SubCommand::new(
             "cfg", 
             "changes a specific configuration remotely.",
             vec![("key", false, EV::NAME), ("value", false, EV::NAME)],
-        ),
-        SubCommand::new(
-            "ns",
-            "shows current namespace, and entries",
-            vec![("namespace", false, EV::NAME)],
         ),
         SubCommand::new(
             "dump",

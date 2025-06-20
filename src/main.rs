@@ -35,6 +35,7 @@ fn main() {
         }
     };
 
+    let db = SecDb::new(confi.clone());
     let parser = matches.get_matches();
 
     match parser.subcommand() {
@@ -62,9 +63,19 @@ fn main() {
                 }
             }
         },
-        
+        Some(("show", sub_matches)) => {
+            let namespace = sub_matches.get_one::<String>("namespace");
+            match namespace {
+                Some(namespace) => {
+                    db.list_cf_formatted(namespace);
+                },
+                None => {
+                    db.list_cf_formatted(&String::from(confi.get("ns").unwrap()));
+                }
+            }
+        },
+
         _ => {
-            let db = SecDb::new(&confi.get("db").unwrap());
             unreachable!("Exhausted list of subcommands");
         }
     }

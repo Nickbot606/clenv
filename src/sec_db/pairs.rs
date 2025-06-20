@@ -19,10 +19,9 @@ pub fn generate_key_pair(name: &str) -> Result<(RsaPrivateKey, RsaPublicKey), Bo
         
         // Save keys in PEM format
         let private_pem = private_key.to_pkcs1_pem(rsa::pkcs1::LineEnding::LF)?;
-        let public_pem = public_key.to_pkcs1_pem(rsa::pkcs1::LineEnding::LF)?;
-        
         fs::write(&priv_key_file, private_pem.as_bytes())?;
-        fs::write(&pub_key_file, public_pem.as_bytes())?;
+        
+        // public key is available in the "keyring" namespace
         
         println!("Keys generated for {}: {}, {}", name, priv_key_file, pub_key_file);
         

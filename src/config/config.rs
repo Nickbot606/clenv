@@ -1,7 +1,8 @@
 use configparser::ini::Ini;
 use std::error::Error;
 use std::io::{self, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::env;
 
 const CONFIG_DIR: &str = "clenv";
 const CONFIG_FILE: &str = "config.ini";
@@ -9,6 +10,7 @@ const CONFIG_FILE: &str = "config.ini";
 // you need them to be "default"...
 const SECTION: &str = "DEFAULT";
 
+#[derive(Clone)]
 pub struct Config {
     ini: Ini,
 }
@@ -22,15 +24,36 @@ impl Config {
             io::stdin().read_line(&mut buf)?;
             Ok(buf.trim().to_string())
         }
+        
+        fn prompt_path(label: &str) -> Result<String, io::Error> {
+            print!("{}: ", label);
+            io::stdout().flush()?;
 
-        let db = prompt("Enter database name")?;
-        let private_key = prompt("Enter your name (used for key file)")?;
+            let mut buf = String::new();
+            io::stdin().read_line(&mut buf)?;
+            let input = buf.trim();
+
+            let path = Path::new(input);
+            if path.exists() {
+                return Ok(input.to_string());
+            }
+            let cwd = env::current_dir()?;
+            let full_path = cwd.join(input);
+
+            Ok(full_path.to_string_lossy().to_string())
+        }
+
+        let name = prompt("Enter your name")?;
+        let db = prompt_path("Enter database name")?;
+        let private_key = prompt_path("Enter your name (used for key file)")?;
         let ns = prompt("Enter namespace")?;
 
         let mut ini = Ini::new();
+        ini.set(SECTION, "name", Some(name));
         ini.set(SECTION, "db", Some(db));
         ini.set(SECTION, "private_key", Some(private_key));
         ini.set(SECTION, "ns", Some(ns));
+
 
         let config = Config { ini };
         config.save()?;
