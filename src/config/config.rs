@@ -54,7 +54,6 @@ impl Config {
         ini.set(SECTION, "private_key", Some(private_key));
         ini.set(SECTION, "ns", Some(ns));
 
-
         let config = Config { ini };
         config.save()?;
 
@@ -85,8 +84,6 @@ impl Config {
     pub fn list_all(&self) {
         let map = self.ini.get_map_ref();
         let mut found_entries = false;
-
-
         if let Some(section) = map.get("default") {
             if !section.is_empty() {
                 found_entries = true;

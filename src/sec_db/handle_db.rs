@@ -1,10 +1,9 @@
-use base64::engine::Config;
 use rocksdb::{ColumnFamilyDescriptor, DB, Options};
 use std::collections::HashMap;
 use std::path::Path;
 use crate::sec_db::pairs;
 use aes_gcm::Aes256Gcm;
-use rsa::{RsaPublicKey, RsaPrivateKey, Oaep};
+use rsa::{RsaPublicKey, Oaep};
 use rand::rngs::OsRng;
 use crate::sec_db::i_keys::CryptoError;
 use sha2::Sha256;
@@ -33,6 +32,7 @@ impl EncryptedValue {
 
 pub struct SecDb {
     db: DB,
+    path: String
 }
 
 impl SecDb {
@@ -56,8 +56,8 @@ impl SecDb {
                 .map(|name| ColumnFamilyDescriptor::new(name, Options::default()))
                 .collect::<Vec<_>>();
 
-            let db = DB::open_cf_descriptors(&db_opts, path, cf_descriptors).unwrap();
-            return SecDb { db };
+            let db = DB::open_cf_descriptors(&db_opts, &path, cf_descriptors).unwrap();
+            return SecDb { db, path };
         }
 
         let mut db = DB::open(&db_opts, &path).unwrap();
@@ -69,8 +69,19 @@ impl SecDb {
         db.put_cf(cf, name, keyPair.unwrap().1.to_public_key_pem(Default::default()).unwrap()).unwrap();
 
         println!("Created database at {}", &path);
-        SecDb { db }
+        SecDb { db, path }
     }
+
+    pub fn list_cfs(&self) {
+        let cf_names = DB::list_cf(&Options::default(), &self.path)
+            .unwrap_or_else(|_| vec!["default".to_string()]);
+
+        println!("Namespaces:");
+        for cf in cf_names {
+            println!("- {}", cf);
+        }
+    }
+
 
     pub fn list_cf_formatted(&self, family: &str) {
         let ring = self.db.cf_handle(family).unwrap();

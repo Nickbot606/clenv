@@ -1,5 +1,4 @@
 use clap::{Command, Parser, command};
-use colored::*;
 
 mod config;
 use config::conf;
@@ -70,10 +69,10 @@ fn main() {
                     db.list_cf_formatted(namespace);
                 },
                 None => {
-                    db.list_cf_formatted(&String::from(confi.get("ns").unwrap()));
+                    db.list_cfs();
                 }
             }
-        },
+        }
 
         _ => {
             unreachable!("Exhausted list of subcommands");
