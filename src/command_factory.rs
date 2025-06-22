@@ -42,7 +42,7 @@ pub fn add_all_comm() -> Vec<Command> {
             vec![("namespace", false, EV::NAME)],
         ),
         SubCommand::new(
-            "cfg", 
+            "cfg",
             "changes a specific configuration remotely.",
             vec![("key", false, EV::NAME), ("value", false, EV::NAME)],
         ),

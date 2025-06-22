@@ -1,8 +1,8 @@
+use super::path_utils::resolve_path;
 use configparser::ini::Ini;
 use std::error::Error;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
-use super::path_utils::resolve_path as resolve_path;
 
 const CONFIG_DIR: &str = "clenv";
 const CONFIG_FILE: &str = "config.ini";
@@ -24,7 +24,7 @@ impl Config {
             io::stdin().read_line(&mut buf)?;
             Ok(buf.trim().to_string())
         }
-        
+
         fn prompt_path(label: &str, file_ext: &str) -> Result<String, io::Error> {
             print!("{}: ", label);
             io::stdout().flush()?;
@@ -32,12 +32,18 @@ impl Config {
             let mut buf = String::new();
             io::stdin().read_line(&mut buf)?;
             let input = buf.trim();
-            Ok(resolve_path(input, file_ext).into_os_string().into_string().unwrap())
+            Ok(resolve_path(input, file_ext)
+                .into_os_string()
+                .into_string()
+                .unwrap())
         }
 
         let name = prompt("Enter your name")?;
-        let db = prompt_path("Enter database name","")?;
-        let private_key = prompt_path("Enter the location of your private key file (or just file name in the current directory)","pem")?;
+        let db = prompt_path("Enter database name", "")?;
+        let private_key = prompt_path(
+            "Enter the location of your private key file (or just file name in the current directory)",
+            "pem",
+        )?;
         let ns = prompt("Enter the namespace")?;
 
         let mut ini = Ini::new();
@@ -66,7 +72,7 @@ impl Config {
     }
 
     pub fn get(&self, key: &str) -> Option<String> {
-        self.ini.get("default",key)
+        self.ini.get("default", key)
     }
 
     pub fn list_all(&self) {

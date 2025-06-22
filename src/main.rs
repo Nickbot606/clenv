@@ -25,9 +25,7 @@ fn main() {
     }
 
     let mut confi = match conf::load() {
-        Ok(cfg) => {
-            cfg
-        },
+        Ok(cfg) => cfg,
         Err(e) => {
             eprintln!("Configuration file not found. Creating one...");
             conf::init().expect("Failed to initialize config")
@@ -41,7 +39,7 @@ fn main() {
         Some(("cfg", sub_matches)) => {
             let key = sub_matches.get_one::<String>("key");
             let value = sub_matches.get_one::<String>("value");
-            
+
             // Quick and dirty way to reset your configuration file
             if key == Some(&String::from("init")) {
                 conf::init().expect("Could not create a configuration");
@@ -51,41 +49,39 @@ fn main() {
                 (Some(k), Some(v)) => {
                     confi.set(k, v);
                     println!("Set {} = {}", k, v);
-                },
-                (Some(k), None) => {
-                    match confi.get(k) {
-                        Some(v) => {
-                            println!("{} = {}", k, v)
-                        },
-                        None => println!("Key '{}' not found", k),
+                }
+                (Some(k), None) => match confi.get(k) {
+                    Some(v) => {
+                        println!("{} = {}", k, v)
                     }
+                    None => println!("Key '{}' not found", k),
                 },
                 (None, None) => {
                     println!("Listing all config entries:");
                     confi.list_all();
-                },
+                }
                 (None, Some(_)) => {
                     eprintln!("Error: value provided without key");
                 }
             }
-        },
+        }
         Some(("show", sub_matches)) => {
             let namespace = sub_matches.get_one::<String>("namespace");
             match namespace {
                 Some(namespace) => {
                     db.list_cf_formatted(namespace);
-                },
+                }
                 None => {
                     db.list_cfs();
                 }
             }
-        },
+        }
         Some(("store", sub_matches)) => {
             let filename = sub_matches.get_one::<String>("filename");
             match filename {
                 Some(filename) => {
                     db.store_file(filename);
-                },
+                }
                 None => {
                     eprintln!("Could not find the file...");
                 }
