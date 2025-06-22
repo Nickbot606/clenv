@@ -42,6 +42,11 @@ fn main() {
             let key = sub_matches.get_one::<String>("key");
             let value = sub_matches.get_one::<String>("value");
             
+            // Quick and dirty way to reset your configuration file
+            if key == Some(&String::from("init")) {
+                conf::init().expect("Could not create a configuration");
+                return;
+            }
             match (key, value) {
                 (Some(k), Some(v)) => {
                     confi.set(k, v);
@@ -49,7 +54,9 @@ fn main() {
                 },
                 (Some(k), None) => {
                     match confi.get(k) {
-                        Some(v) => println!("{} = {}", k, v),
+                        Some(v) => {
+                            println!("{} = {}", k, v)
+                        },
                         None => println!("Key '{}' not found", k),
                     }
                 },
@@ -72,6 +79,17 @@ fn main() {
                     db.list_cfs();
                 }
             }
+        },
+        Some(("store", sub_matches)) => {
+            let filename = sub_matches.get_one::<String>("filename");
+            match filename {
+                Some(filename) => {
+                    db.store_file(filename);
+                },
+                None => {
+                    eprintln!("Could not find the file...");
+                }
+            }
         }
 
         _ => {
@@ -79,12 +97,3 @@ fn main() {
         }
     }
 }
-
-// fn main() -> Result<(), Box<dyn Error>> {
-
-//     // Initalize the database
-//     let temp = SecDb::new("./path");
-//     temp.list_cf_formatted("keyring");
-
-//     Ok(())
-// }

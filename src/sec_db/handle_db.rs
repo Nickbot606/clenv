@@ -1,7 +1,6 @@
 use rocksdb::{ColumnFamilyDescriptor, DB, Options};
 use std::collections::HashMap;
 use std::path::Path;
-use crate::sec_db::pairs;
 use aes_gcm::Aes256Gcm;
 use rsa::{RsaPublicKey, Oaep};
 use rand::rngs::OsRng;
@@ -9,6 +8,9 @@ use crate::sec_db::i_keys::CryptoError;
 use sha2::Sha256;
 use crate::config::config::Config as Conf;
 use rsa::pkcs8::EncodePublicKey;
+use super::i_keys::i_keys;
+use std::fs::File;
+use std::io::Read;
 
 // Extra interface for adding recipients after the text has already been encrypted
 pub struct EncryptedValue {
@@ -32,7 +34,7 @@ impl EncryptedValue {
 
 pub struct SecDb {
     db: DB,
-    path: String
+    conf: Conf
 }
 
 impl SecDb {
@@ -57,23 +59,23 @@ impl SecDb {
                 .collect::<Vec<_>>();
 
             let db = DB::open_cf_descriptors(&db_opts, &path, cf_descriptors).unwrap();
-            return SecDb { db, path };
+            return SecDb { db, conf };
         }
 
         let mut db = DB::open(&db_opts, &path).unwrap();
         db.create_cf("keyring", &Options::default()).unwrap();
 
         let cf = db.cf_handle("keyring").unwrap();
-        let keyPair = pairs::generate_key_pair(&name);
+        let keyPair = i_keys::generate_key_pair(&name);
 
         db.put_cf(cf, name, keyPair.unwrap().1.to_public_key_pem(Default::default()).unwrap()).unwrap();
 
         println!("Created database at {}", &path);
-        SecDb { db, path }
+        SecDb { db, conf }
     }
 
     pub fn list_cfs(&self) {
-        let cf_names = DB::list_cf(&Options::default(), &self.path)
+        let cf_names = DB::list_cf(&Options::default(), self.conf.get("db").unwrap())
             .unwrap_or_else(|_| vec!["default".to_string()]);
 
         println!("Namespaces:");
@@ -81,7 +83,6 @@ impl SecDb {
             println!("- {}", cf);
         }
     }
-
 
     pub fn list_cf_formatted(&self, family: &str) {
         let ring = self.db.cf_handle(family).unwrap();
@@ -97,5 +98,14 @@ impl SecDb {
                 }
             }
         }
+    }
+
+    pub fn store_file(&self, filename: &str) {
+        let mut file = File::open(filename);
+        let metadata = std::fs::metadata(filename);
+        let mut buffer = vec![0; metadata.expect("could not find metadata").len() as usize];
+        file.expect("could not read file").read(&mut buffer);
+        // let encrpted = i_keys::encrypt(buffer, );
+        // self.db.put_cf(&self.conf.get("ns").unwrap(),filename,encrypted);
     }
 }
