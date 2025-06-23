@@ -2,6 +2,7 @@ use clap::{Command, Parser, command};
 
 mod config;
 use config::conf;
+use config::resolve_path;
 
 mod sec_db;
 use sec_db::SecDb;
@@ -32,7 +33,6 @@ fn main() {
         }
     };
 
-    let db = SecDb::new(confi.clone());
     let parser = matches.get_matches();
 
     match parser.subcommand() {
@@ -43,6 +43,7 @@ fn main() {
             // Quick and dirty way to reset your configuration file
             if key == Some(&String::from("init")) {
                 conf::init().expect("Could not create a configuration");
+                let db = SecDb::new(confi.clone());
                 return;
             }
             match (key, value) {
@@ -67,6 +68,7 @@ fn main() {
         }
         Some(("show", sub_matches)) => {
             let namespace = sub_matches.get_one::<String>("namespace");
+            let db = SecDb::new(confi.clone());
             match namespace {
                 Some(namespace) => {
                     db.list_cf_formatted(namespace);
@@ -78,9 +80,14 @@ fn main() {
         }
         Some(("store", sub_matches)) => {
             let filename = sub_matches.get_one::<String>("filename");
+            let db = SecDb::new(confi.clone());
             match filename {
                 Some(filename) => {
-                    db.store_file(filename);
+                    let target_file = resolve_path(filename, "")
+                        .into_os_string()
+                        .into_string()
+                        .unwrap();
+                    db.store_file(&target_file);
                 }
                 None => {
                     eprintln!("Could not find the file...");

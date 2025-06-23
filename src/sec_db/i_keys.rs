@@ -1,7 +1,7 @@
 use aes_gcm::aead::{Aead, KeyInit};
 use aes_gcm::{Aes256Gcm, Key, Nonce};
 use rand::rngs::OsRng;
-use rsa::pkcs1::{DecodeRsaPrivateKey, EncodeRsaPrivateKey, EncodeRsaPublicKey};
+use rsa::pkcs1::{DecodeRsaPrivateKey, EncodeRsaPrivateKey};
 use rsa::rand_core::RngCore;
 use rsa::{Oaep, RsaPrivateKey, RsaPublicKey};
 use sha2::Sha256;
@@ -23,6 +23,37 @@ pub enum CryptoError {
 
 // interface for key handling and management
 impl i_keys {
+    // Generates the public key pairs
+    pub fn generate_key_pair(
+        name: &str,
+        filename: &str,
+    ) -> Result<(RsaPrivateKey, RsaPublicKey), Box<dyn std::error::Error>> {
+        let priv_key_file = filename;
+
+        if !std::path::Path::new(&priv_key_file).exists() {
+            println!("Generating RSA key pair for {}...", name);
+
+            let mut rng = OsRng;
+            let bits = 2048;
+
+            // Generate RSA private keys
+            let private_key = RsaPrivateKey::new(&mut rng, bits)?;
+            let public_key = RsaPublicKey::from(&private_key);
+
+            // Save key in PEM format
+            let private_pem = private_key.to_pkcs1_pem(rsa::pkcs1::LineEnding::LF)?;
+            fs::write(&priv_key_file, private_pem.as_bytes())?;
+
+            Ok((private_key, public_key))
+        } else {
+            println!("Loading existing keys for {}...", name);
+            let private_pem = fs::read_to_string(&priv_key_file)?;
+            let private_key = RsaPrivateKey::from_pkcs1_pem(&private_pem)?;
+            let public_key = RsaPublicKey::from(&private_key);
+            Ok((private_key, public_key))
+        }
+    }
+
     // Standard encryption implementation
     pub fn encrypt(
         message: &[u8],
@@ -63,36 +94,6 @@ impl i_keys {
             .decrypt(Nonce::from_slice(nonce), ciphertext)
             .map_err(CryptoError::Aes)?;
         Ok(decrypted)
-    }
-
-    // Generates the public key pairs
-    pub fn generate_key_pair(
-        name: &str,
-    ) -> Result<(RsaPrivateKey, RsaPublicKey), Box<dyn std::error::Error>> {
-        let priv_key_file = format!("{}_private.pem", name);
-
-        if !std::path::Path::new(&priv_key_file).exists() {
-            println!("Generating RSA key pair for {}...", name);
-
-            let mut rng = OsRng;
-            let bits = 2048;
-
-            // Generate RSA private keys
-            let private_key = RsaPrivateKey::new(&mut rng, bits)?;
-            let public_key = RsaPublicKey::from(&private_key);
-
-            // Save key in PEM format
-            let private_pem = private_key.to_pkcs1_pem(rsa::pkcs1::LineEnding::LF)?;
-            fs::write(&priv_key_file, private_pem.as_bytes())?;
-
-            Ok((private_key, public_key))
-        } else {
-            println!("Loading existing keys for {}...", name);
-            let private_pem = fs::read_to_string(&priv_key_file)?;
-            let private_key = RsaPrivateKey::from_pkcs1_pem(&private_pem)?;
-            let public_key = RsaPublicKey::from(&private_key);
-            Ok((private_key, public_key))
-        }
     }
 
     // TODO: to implement
