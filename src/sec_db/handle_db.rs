@@ -140,7 +140,7 @@ impl SecDb {
             encrypted_keys.len()
         );
         
-        self.db.put_cf(&self.conf.get("ns").unwrap(),filename,encrypted);
+        // self.db.put_cf(&self.conf.get("ns").unwrap(),filename,encrypted);
     }
     // pub fn store_file(&self, filename: &str) {
     //     let path = resolve_path(filename, "");
