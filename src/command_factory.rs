@@ -47,6 +47,11 @@ pub fn add_all_comm() -> Vec<Command> {
             vec![("key", false, EV::NAME), ("value", false, EV::NAME)],
         ),
         SubCommand::new(
+            "store",
+            "stores a file",
+            vec![("file", false, EV::NAME)]
+        ),
+        SubCommand::new(
             "dump",
             "dumps all blocks into individual env files from the namespace to current working directory",
             vec![],

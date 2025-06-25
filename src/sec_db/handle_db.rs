@@ -24,6 +24,14 @@ pub struct EncryptedValue {
 }
 
 impl EncryptedValue {
+    pub fn new(
+        ciphertext: Vec<u8>,
+        nonce: [u8; 12],
+        key_shares: HashMap<String, Vec<u8>>,
+        raw_aes_key: aes_gcm::Key<Aes256Gcm>) -> EncryptedValue {
+            EncryptedValue { ciphertext, nonce, key_shares, raw_aes_key }
+        }
+
     pub fn add_recipient(&mut self, name: &str, pubkey: &RsaPublicKey) -> Result<(), CryptoError> {
         let encrypted = pubkey.encrypt(
             &mut OsRng,
@@ -139,23 +147,22 @@ impl SecDb {
             ciphertext.len(),
             encrypted_keys.len()
         );
-        
-        // self.db.put_cf(&self.conf.get("ns").unwrap(),filename,encrypted);
+        println!("Plain: {:?}", buffer);
+        println!("Debug cipher: {:?}", ciphertext);
+        let encrypted = EncryptedValue::new(
+            ciphertext,nonce,encrypted_keys, //I need to restructure a litle
+        )
+
+        self.db.put_cf(&self.conf.get("ns").unwrap(),filename,encrypted);
     }
-    // pub fn store_file(&self, filename: &str) {
-    //     let path = resolve_path(filename, "");
-    //     let mut file = File::open(&path);
-    //     let metadata = std::fs::metadata(path);
-    //     let mut buffer = vec![0; metadata.expect("could not find metadata").len() as usize];
-    //     // file.expect("could not read file").read(&mut buffer);
-    //     let recipients = self.get_recipients(); // where `secdb: &SecDb`
 
-    //     let encrpted = i_keys::encrypt(&buffer, recipients);
-    //     // 
-    //     // println!("")
-    // }
+    
+    pub fn read_file(&self, stored_name: &str) {
 
-    //
+    }
+
+
+    // 
     fn get_recipients(&self) -> Result<Vec<(String, RsaPublicKey)>, Box<dyn Error>> {
         let ring = self
             .db
@@ -177,7 +184,6 @@ impl SecDb {
                 }
             }
         }
-
         Ok(recipients)
     }
 }

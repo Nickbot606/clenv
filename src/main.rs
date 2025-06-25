@@ -79,7 +79,7 @@ fn main() {
             }
         }
         Some(("store", sub_matches)) => {
-            let filename = sub_matches.get_one::<String>("filename");
+            let filename = sub_matches.get_one::<String>("file");
             let db = SecDb::new(confi.clone());
             match filename {
                 Some(filename) => {
