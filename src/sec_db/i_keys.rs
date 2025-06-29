@@ -130,13 +130,14 @@ impl i_keys {
         let my_encrypted_key = encrypted_keys
             .get("self") // or whatever name is associated with your key
             .ok_or_else(|| rsa::errors::Error::Decryption)?;
-        
+
         // Decrypt AES key
         let aes_key_bytes = my_private_key.decrypt(Oaep::new::<Sha256>(), my_encrypted_key)?;
 
         // Re-encrypt AES key for the new recipient
         let mut rng = OsRng;
-        let encrypted_key = new_recipient_pubkey.encrypt(&mut rng, Oaep::new::<Sha256>(), &aes_key_bytes)?;
+        let encrypted_key =
+            new_recipient_pubkey.encrypt(&mut rng, Oaep::new::<Sha256>(), &aes_key_bytes)?;
 
         // Insert into key map
         encrypted_keys.insert(new_recipient_name, encrypted_key);

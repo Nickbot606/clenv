@@ -2,9 +2,9 @@ use super::i_keys::i_keys;
 use crate::config::config::Config as Conf;
 use crate::config::resolve_path;
 use rocksdb::{ColumnFamilyDescriptor, DB, Options};
+use rsa::Oaep;
 use rsa::pkcs1::DecodeRsaPrivateKey;
 use rsa::pkcs8::{DecodePublicKey, EncodePublicKey};
-use rsa::{Oaep};
 use rsa::{RsaPrivateKey, RsaPublicKey};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -162,7 +162,6 @@ impl SecDb {
                 .expect("Deserialization failed")
                 .0;
 
-
         // Then just do everything backwards
         let test = i_keys::decrypt(
             &entry.encrypted_keys[&self.conf.get("name").unwrap()],
@@ -211,14 +210,16 @@ impl SecDb {
     pub fn rm(&self, name: &str) {
         let cf_name = self.conf.get("ns").expect("Missing namespace");
         let cf = self.db.cf_handle(&cf_name).expect("Missing column family");
-        self.db.delete_cf(&cf,name).expect("Could not find entry in column family");
-        println!("Successfuly removed entry from clenv: {}",name);
+        self.db
+            .delete_cf(&cf, name)
+            .expect("Could not find entry in column family");
+        println!("Successfuly removed entry from clenv: {}", name);
     }
 
     pub fn add_user(&self, name: &str) {
         let filename = format!("{}.pem", name);
-        let (_priv_key, pub_key) = i_keys::generate_key_pair(name, &filename)
-            .expect("Failed to generate keypair");
+        let (_priv_key, pub_key) =
+            i_keys::generate_key_pair(name, &filename).expect("Failed to generate keypair");
 
         let cf_keyring = self.db.cf_handle("keyring").expect("Missing keyring");
         self.db
@@ -243,9 +244,10 @@ impl SecDb {
             if let Ok((key, value)) = item {
                 let key_str = String::from_utf8_lossy(&key);
 
-                let mut entry: EncryptedEntry = bincode::serde::decode_from_slice(&value, bincode::config::standard())
-                    .expect("Deserialization failed")
-                    .0;
+                let mut entry: EncryptedEntry =
+                    bincode::serde::decode_from_slice(&value, bincode::config::standard())
+                        .expect("Deserialization failed")
+                        .0;
 
                 let encrypted_key = entry.encrypted_keys.get(&my_name).expect("No key for self");
                 let aes_key = my_priv_key
@@ -253,10 +255,16 @@ impl SecDb {
                     .expect("Failed to decrypt AES key");
 
                 let encrypted_for_new_user = pub_key
-                    .encrypt(&mut rand::rngs::OsRng, Oaep::new::<sha2::Sha256>(), &aes_key)
+                    .encrypt(
+                        &mut rand::rngs::OsRng,
+                        Oaep::new::<sha2::Sha256>(),
+                        &aes_key,
+                    )
                     .expect("Failed to encrypt AES key for new user");
 
-                entry.encrypted_keys.insert(name.to_string(), encrypted_for_new_user);
+                entry
+                    .encrypted_keys
+                    .insert(name.to_string(), encrypted_for_new_user);
 
                 let serialized = bincode::serde::encode_to_vec(&entry, bincode::config::standard())
                     .expect("Serialization failed");
@@ -285,13 +293,15 @@ impl SecDb {
             if let Ok((key, value)) = item {
                 let key_str = String::from_utf8_lossy(&key);
 
-                let mut entry: EncryptedEntry = bincode::serde::decode_from_slice(&value, bincode::config::standard())
-                    .expect("Deserialization failed")
-                    .0;
+                let mut entry: EncryptedEntry =
+                    bincode::serde::decode_from_slice(&value, bincode::config::standard())
+                        .expect("Deserialization failed")
+                        .0;
 
                 if entry.encrypted_keys.remove(name).is_some() {
-                    let serialized = bincode::serde::encode_to_vec(&entry, bincode::config::standard())
-                        .expect("Serialization failed");
+                    let serialized =
+                        bincode::serde::encode_to_vec(&entry, bincode::config::standard())
+                            .expect("Serialization failed");
 
                     self.db
                         .put_cf(&cf, &key, &serialized)
