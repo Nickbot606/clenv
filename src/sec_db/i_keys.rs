@@ -5,9 +5,12 @@ use rsa::pkcs1::{DecodeRsaPrivateKey, EncodeRsaPrivateKey};
 use rsa::rand_core::RngCore;
 use rsa::{Oaep, RsaPrivateKey, RsaPublicKey};
 use sha2::Sha256;
+use zstd::decode_all;
 use std::collections::HashMap;
 use std::fs;
 use thiserror::Error;
+use zstd::stream::encode_all;
+use std::io::Cursor;
 
 pub struct i_keys;
 
@@ -55,6 +58,8 @@ impl i_keys {
     }
 
     // Standard encryption implementation
+    // First, compress the binary
+    // Then encrypt the compressed file.
     pub fn encrypt(
         message: &[u8],
         recipients: &[(String, RsaPublicKey)],
@@ -66,8 +71,11 @@ impl i_keys {
         let mut nonce = [0u8; 12];
         rng.fill_bytes(&mut nonce);
 
+        let comp = Self::compress_binary(message).unwrap();
+        let conv: &[u8] = &comp[..];
+
         let ciphertext = cipher
-            .encrypt(Nonce::from_slice(&nonce), message)
+            .encrypt(Nonce::from_slice(&nonce), conv)
             .map_err(CryptoError::Aes)?;
 
         let mut encrypted_keys = HashMap::new();
@@ -92,8 +100,19 @@ impl i_keys {
         let cipher = Aes256Gcm::new(aes_key);
         let decrypted = cipher
             .decrypt(Nonce::from_slice(nonce), ciphertext)
-            .map_err(CryptoError::Aes)?;
-        Ok(decrypted)
+            .map_err(CryptoError::Aes).unwrap();
+        let decompress = Self::decompress_binary(&decrypted);
+        Ok(decompress.unwrap())
+    }
+
+    pub fn compress_binary(data: &[u8]) -> Result<Vec<u8>, std::io::Error> {
+        let cursor = Cursor::new(data);
+        encode_all(cursor, 3)
+    }
+
+    pub fn decompress_binary(data: &[u8]) -> Result<Vec<u8>, std::io::Error> {
+        let cursor = Cursor::new(data);
+        decode_all(cursor)
     }
 
     // TODO: to implement

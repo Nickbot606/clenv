@@ -27,7 +27,7 @@ fn main() {
 
     let mut confi = match conf::load() {
         Ok(cfg) => cfg,
-        Err(e) => {
+        Err(_) => {
             eprintln!("Configuration file not found. Creating one...");
             conf::init().expect("Failed to initialize config")
         }
@@ -43,7 +43,7 @@ fn main() {
             // Quick and dirty way to reset your configuration file
             if key == Some(&String::from("init")) {
                 conf::init().expect("Could not create a configuration");
-                let db = SecDb::new(confi.clone());
+                let _db = SecDb::new(confi.clone());
                 return;
             }
             match (key, value) {
@@ -78,23 +78,48 @@ fn main() {
                 }
             }
         }
+        // Stores the file. If there is no name option, just uses the file name as the stored name
         Some(("store", sub_matches)) => {
-            let filename = sub_matches.get_one::<String>("file");
+            let file = sub_matches.get_one::<String>("file");
+            let name = sub_matches.get_one::<String>("name");
+
             let db = SecDb::new(confi.clone());
-            match filename {
-                Some(filename) => {
-                    let target_file = resolve_path(filename, "")
+            match (file, name) {
+                (Some(n),Some(f)) => {
+                    let target_file = resolve_path(f, "")
                         .into_os_string()
                         .into_string()
                         .unwrap();
-                    db.store_file(&target_file);
-                }
-                None => {
-                    eprintln!("Could not find the file...");
+                    db.store_file(n, &target_file);
+                },
+                (Some(f),None) => {
+                    let target_file = resolve_path(f, "")
+                        .into_os_string()
+                        .into_string()
+                        .unwrap();
+                    db.store_file(f, &target_file);
+                },
+                (None,Some(_)) => {
+                    eprintln!("File not entered");
+                },
+                (None,None) => {
+                    eprintln!("Filename not entered");
                 }
             }
-        }
-
+        },
+        Some(("dump", sub_matches)) => {
+            let name = sub_matches.get_one::<String>("name");
+            let db = SecDb::new(confi.clone());
+            
+            match name {
+                Some(n) => {
+                    db.dump_file(n);
+                },
+                None => {
+                    eprintln!("Missing name of file");
+                }
+            }
+        },
         _ => {
             unreachable!("Exhausted list of subcommands");
         }

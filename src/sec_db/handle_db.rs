@@ -1,46 +1,30 @@
 use super::i_keys::i_keys;
 use crate::config::config::Config as Conf;
 use crate::config::resolve_path;
-use crate::sec_db::i_keys::CryptoError;
-use aes_gcm::Aes256Gcm;
-use rand::rngs::OsRng;
 use rocksdb::{ColumnFamilyDescriptor, DB, Options};
+use rsa::pkcs1::DecodeRsaPrivateKey;
 use rsa::pkcs8::DecodePublicKey;
 use rsa::pkcs8::EncodePublicKey;
-use rsa::{Oaep, RsaPublicKey};
-use sha2::Sha256;
+use rsa::{RsaPublicKey,RsaPrivateKey};
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
+use serde::{Deserialize, Serialize};
+use std::fs;
 
-// Extra interface for adding recipients after the text has already been encrypted
-pub struct EncryptedValue {
+#[derive(Serialize, Deserialize, Debug, Clone)]
+// pub struct EncryptedValue {
+//     pub ciphertext: Vec<u8>,
+//     pub nonce: [u8; 12],
+//     pub key_shares: HashMap<String, Vec<u8>>,
+// }
+
+pub struct EncryptedEntry {
     pub ciphertext: Vec<u8>,
     pub nonce: [u8; 12],
-    pub key_shares: HashMap<String, Vec<u8>>,
-    pub raw_aes_key: aes_gcm::Key<Aes256Gcm>,
-}
-
-impl EncryptedValue {
-    pub fn new(
-        ciphertext: Vec<u8>,
-        nonce: [u8; 12],
-        key_shares: HashMap<String, Vec<u8>>,
-        raw_aes_key: aes_gcm::Key<Aes256Gcm>) -> EncryptedValue {
-            EncryptedValue { ciphertext, nonce, key_shares, raw_aes_key }
-        }
-
-    pub fn add_recipient(&mut self, name: &str, pubkey: &RsaPublicKey) -> Result<(), CryptoError> {
-        let encrypted = pubkey.encrypt(
-            &mut OsRng,
-            Oaep::new::<Sha256>(),
-            self.raw_aes_key.as_slice(),
-        )?;
-        self.key_shares.insert(name.to_string(), encrypted);
-        Ok(())
-    }
+    pub encrypted_keys: HashMap<String, Vec<u8>>,
 }
 
 const CONF_ERROR: &str =
@@ -83,6 +67,7 @@ impl SecDb {
 
         // Keyring is where the recipients are kept. run "clenv show keyring" to see who has access to this database at any time
         db.create_cf("keyring", &Options::default()).unwrap();
+        db.create_cf(conf.get("ns").unwrap(), &Options::default()).unwrap();
         let cf = db.cf_handle("keyring").unwrap();
 
         let key_pair = i_keys::generate_key_pair(&name, &private_key);
@@ -129,41 +114,62 @@ impl SecDb {
     }
 
     /// The meat and potatoes of the whole thing: This stores the file given the ever important filename as a byte stream
-    pub fn store_file(&self, filename: &str) {
+    pub fn store_file(&self, name: &str, filename: &str) {
         let path = resolve_path(filename, "");
-        let mut file = File::open(&path).expect("could not open file");
-        let metadata = std::fs::metadata(&path).expect("could not find metadata");
+        let mut file = File::open(&path).expect("Could not open file");
+        let mut file_data = Vec::new();
+        file.read_to_end(&mut file_data).expect("Failed to read file");
 
-        let mut buffer = vec![0; metadata.len() as usize];
-        file.read_exact(&mut buffer).expect("failed to read file");
+        println!("File bin:{:?}", file_data);
 
-        let recipients = self.get_recipients().expect("failed to fetch recipients");
+        let recipients = self.get_recipients().expect("Failed to fetch recipients");
+        let entry = i_keys::encrypt(&file_data, &recipients).expect("Encryption failed");
 
-        let (ciphertext, nonce, encrypted_keys) =
-            i_keys::encrypt(&buffer, &recipients).expect("encryption failed");
-        // test print
-        println!(
-            "Encrypted {} bytes for {} recipients.",
-            ciphertext.len(),
-            encrypted_keys.len()
+        let serialized = bincode::serde::encode_to_vec(&entry, bincode::config::standard())
+            .expect("Serialization failed");
+
+        let cf_name = self.conf.get("ns").expect("Missing namespace");
+        let cf = self.db.cf_handle(&cf_name).expect("Missing column family");
+
+        self.db
+            .put_cf(&cf, name.as_bytes(), &serialized)
+            .expect("DB write failed");
+
+        println!("Stored encrypted file '{}' successfully.", filename);
+    }
+
+    pub fn dump_file(&self, name: &str) {
+        // First grab the column family and db value, and the private key
+        let cf_name = self.conf.get("ns").expect("Missing namespace");
+        let cf = self.db.cf_handle(&cf_name).expect("Missing column family");
+
+        let value = self.db
+            .get_cf(&cf, name.as_bytes())
+            .expect("DB read failed")
+            .expect("No entry found for that key");
+
+        let pem_data = fs::read_to_string(self.conf.get("private_key").unwrap());
+        let priv_key = RsaPrivateKey::from_pkcs1_pem(&pem_data.unwrap()).unwrap();
+
+        // Next, we need to get the individual values
+        let entry: EncryptedEntry = bincode::serde::decode_from_slice(&value, bincode::config::standard())
+            .expect("Deserialization failed")
+            .0;
+
+        let test = i_keys::decrypt(
+            &entry.encrypted_keys[&self.conf.get("name").unwrap()],
+            &entry.ciphertext,
+            &entry.nonce,
+            &priv_key
         );
-        println!("Plain: {:?}", buffer);
-        println!("Debug cipher: {:?}", ciphertext);
-        let encrypted = EncryptedValue::new(
-            ciphertext,nonce,encrypted_keys, //I need to restructure a litle
-        )
 
-        self.db.put_cf(&self.conf.get("ns").unwrap(),filename,encrypted);
-    }
-
-    
-    pub fn read_file(&self, stored_name: &str) {
+        println!("Output: {:?}",test);
 
     }
 
 
-    // 
-    fn get_recipients(&self) -> Result<Vec<(String, RsaPublicKey)>, Box<dyn Error>> {
+    // This file retrives all the public keys for each recipient of the database
+    pub fn get_recipients(&self) -> Result<Vec<(String, RsaPublicKey)>, Box<dyn Error>> {
         let ring = self
             .db
             .cf_handle("keyring")

@@ -48,18 +48,13 @@ pub fn add_all_comm() -> Vec<Command> {
         ),
         SubCommand::new(
             "store",
-            "stores a file",
-            vec![("file", false, EV::NAME)]
+            "Stores the file into the db.",
+            vec![("file", true, EV::NAME),("name", false, EV::NAME)]
         ),
         SubCommand::new(
             "dump",
             "dumps all blocks into individual env files from the namespace to current working directory",
-            vec![],
-        ),
-        SubCommand::new(
-            "write",
-            "writes the selected file to the currently selected namespace with a name of your choosing. If you match a blob name exactly, it will overwrite said blob",
             vec![("name", true, EV::NAME)],
-        ),
+        )
     ]
 }
