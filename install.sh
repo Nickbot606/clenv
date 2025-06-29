@@ -1,34 +1,47 @@
 #!/bin/sh
-
 set -e
 
-REPO_URL="https://github.com/Nickbot606/clenv"
-VERSION="v0.0.0"
+REPO="Nickbot606/clenv"
 BINARY_NAME="clenv"
 
-# Detect the operating system
+# Get latest version
+VERSION=$(curl -s https://api.github.com/repos/$REPO/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/v\1/')
+
+# Detect OS
 OS=$(uname -s)
 ARCH=$(uname -m)
 
 case "$OS" in 
     Linux) PLATFORM="linux" ;;
     Darwin) PLATFORM="macos" ;;
+    MINGW*|MSYS*|CYGWIN*) PLATFORM="windows" ;;
     *) echo "Unsupported OS: $OS"; exit 1 ;;
 esac
 
 case "$ARCH" in
-    X86_64) ARCH="x86_64" ;;
-    arm64) ARCH="aarch64" ;;
-    *) echo "Unsupported OS: $OS"; exit 1 ;;
+    x86_64|amd64) ARCH="x86_64" ;;
+    arm64|aarch64) ARCH="aarch64" ;;
+    *) echo "Unsupported architecture: $ARCH"; exit 1 ;;
 esac
 
-BINARY_URL="$REPO_URL/releases/download/$VERSION/${BINARY_NAME}-${PLATFORM}-${ARCH}"
+EXT=""
+[ "$PLATFORM" = "windows" ] && EXT=".exe"
+
+BINARY_URL="https://github.com/$REPO/releases/download/$VERSION/${BINARY_NAME}-${PLATFORM}-${ARCH}${EXT}"
 
 echo "Downloading $BINARY_NAME from $BINARY_URL..."
 
-curl -L "$BINARY_URL" - o "/tmp/$BINARY_NAME"
-chmod +x "/tmp/$BINARY_NAME"
-sudo mv "/tmp/$BINARY_NAME" /usr/local/bin/$BINARY_NAME
+curl -L "$BINARY_URL" -o "/tmp/${BINARY_NAME}${EXT}"
+chmod +x "/tmp/${BINARY_NAME}${EXT}"
 
-echo "Installed $BINARY_NAME to /usr/local/bin/"
-echo "try out $BINARY_NAME --help"
+# Install
+INSTALL_PATH="/usr/local/bin/${BINARY_NAME}"
+if [ "$PLATFORM" = "windows" ]; then
+    INSTALL_PATH="$HOME/.cargo/bin/${BINARY_NAME}.exe"
+    mkdir -p "$(dirname "$INSTALL_PATH")"
+fi
+
+mv "/tmp/${BINARY_NAME}${EXT}" "$INSTALL_PATH"
+
+echo "Installed $BINARY_NAME to $INSTALL_PATH"
+"$INSTALL_PATH" --help

@@ -7,7 +7,7 @@ This project was created with the intent of alleviating the stress on teams whic
 # Installation
 
 ```bash
-curl -sSf https://https://github.com/Nickbot606/clenv/install.sh | sh
+curl -sSf https://github.com/Nickbot606/clenv/install.sh | sh
 ```
 
 # Usage/Nomanclature
