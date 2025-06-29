@@ -66,19 +66,6 @@ fn main() {
                 }
             }
         }
-        Some(("show", sub_matches)) => {
-            let namespace = sub_matches.get_one::<String>("namespace");
-            let db = SecDb::new(confi.clone());
-            match namespace {
-                Some(namespace) => {
-                    db.list_cf_formatted(namespace);
-                }
-                None => {
-                    db.list_cfs();
-                }
-            }
-        }
-        // Stores the file. If there is no name option, just uses the file name as the stored name
         Some(("store", sub_matches)) => {
             let file = sub_matches.get_one::<String>("file");
             let name = sub_matches.get_one::<String>("name");
@@ -111,6 +98,54 @@ fn main() {
                 }
                 None => {
                     eprintln!("Missing name of file");
+                }
+            }
+        }
+        Some(("show", sub_matches)) => {
+            let namespace = sub_matches.get_one::<String>("namespace");
+            let db = SecDb::new(confi.clone());
+            match namespace {
+                Some(namespace) => {
+                    db.list_cf_formatted(namespace);
+                }
+                None => {
+                    db.list_cfs();
+                }
+            }
+        }
+        Some(("rm", sub_matches)) => {
+            let name = sub_matches.get_one::<String>("entry");
+            let db = SecDb::new(confi.clone());
+            match name {
+                Some(name) => {
+                    db.rm(name);
+                }
+                None => {
+                    eprintln!("Please provide name of the entry you would like to remove")
+                }
+            }
+        }
+        Some(("add", sub_matches)) => {
+            let name = sub_matches.get_one::<String>("name");
+            let db = SecDb::new(confi.clone());
+            match name {
+                Some(name) => {
+                    db.add_user(name);
+                }
+                None => {
+                    eprintln!("Pleas provide a name for the user you are adding.")
+                }
+            }
+        }
+        Some(("remove", sub_matches)) => {
+            let name = sub_matches.get_one::<String>("name");
+            let db = SecDb::new(confi.clone());
+            match name {
+                Some(name) => {
+                    db.remove_user(name);
+                }
+                None => {
+                    eprintln!("Pleas provide a name for the user you are adding.")
                 }
             }
         }

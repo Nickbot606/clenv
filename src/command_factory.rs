@@ -32,16 +32,6 @@ impl SubCommand {
 pub fn add_all_comm() -> Vec<Command> {
     vec![
         SubCommand::new(
-            "add",
-            "adds a public key to add the users\' keys",
-            vec![("name", true, EV::NAME), ("filepath", true, EV::PATH)],
-        ),
-        SubCommand::new(
-            "show",
-            "shows the currently selected database, users who have access, and available namespaces. Put the name of the namespace to instead list the namespace from a different namespace.",
-            vec![("namespace", false, EV::NAME)],
-        ),
-        SubCommand::new(
             "cfg",
             "changes a specific configuration remotely.",
             vec![("key", false, EV::NAME), ("value", false, EV::NAME)],
@@ -54,6 +44,26 @@ pub fn add_all_comm() -> Vec<Command> {
         SubCommand::new(
             "dump",
             "dumps all blocks into individual env files from the namespace to current working directory",
+            vec![("name", true, EV::NAME)],
+        ),
+        SubCommand::new(
+            "show",
+            "shows the currently selected database, users who have access, and available namespaces. Put the name of the namespace to instead list the namespace from a different namespace.",
+            vec![("namespace", false, EV::NAME)],
+        ),
+        SubCommand::new(
+            "rm",
+            "rm removes the entry from the currently selected namespace. ",
+            vec![("entry", true, EV::NAME)],
+        ),
+        SubCommand::new(
+            "add",
+            "adds a user to the keyring. Provide the name of the user their public and private key will be added.",
+            vec![("name", true, EV::NAME)],
+        ),
+        SubCommand::new(
+            "remove",
+            "removes a user to the keyring. Just include the name.",
             vec![("name", true, EV::NAME)],
         ),
     ]

@@ -23,7 +23,7 @@ The way I like to use this tool is to use the Namespace as a project, then each 
 # Usage
 ## Configuration
 *clenv* is not free from having confgiruations itself, however these are kept to a minimum in order to maintain a semblance of state management. All of these keys can be changed remotely via the `cfg` argument.
-This configuration file can be found in `~/.config/clenv`
+This configuration file can be found in your operating system's configuration directory.
 
 | name | example | description |
 | --- | --- | --- |
@@ -63,7 +63,13 @@ The database can store multiple files of the same name in seperate files, howeve
 Also note that if you write a file to a namespace that doesn't exist, it will automatically create said namespace.
 
 **disclaimer**
-The CLI uses zstd for file compression and oaep rsa for encryption. It does not encrypt the file extenion nor does it encrypt the namespaces or names of entries. It does however encrypt all other data it is given.
+The CLI uses zstd for file compression and oaep rsa for encryption. It does not encrypt the file extenion nor does it encrypt the namespaces or names of entries. It does encrypt the entireity of the file itself.
+
+### dump
+dump will write the env/entry to a file. It will use the name of the entry + the file extension it had upon storing it into the database.
+`clenv dump test.txt`
+
+If you have a file which is named identically and you choose to write this file, it will overwrite your current file so please be careful.
 
 ### show
 show if no other arugments will display all of the currently available namespaces. If you speicfy a namespace after show it will display all the entries for that namespace.
@@ -72,30 +78,31 @@ show if no other arugments will display all of the currently available namespace
 `clenv show ns`
 
 Note that if you change your current namespace, it will not create said namespace until you have stored at least one file into that space.
-
-### dump
-dump will write the env/entry to a file. It will use the name of the entry + the file extension it had upon storing it into the database.
-`clenv dump test.txt`
-
-If you have a file which is named identically and you choose to write this file, it will overwrite your current file so please be careful.
+Use this function to also see who your recipients are by doing the following: 
+`clenv show keyring`
 
 ### rm
 rm removes the entry from the currently selected namespace. 
 `clenv rm test.txt`
 
 ### add
-adds a user to the keyring
+adds a user to the keyring. Note that this will not update your config to the new rsa public and private keys. But it will add their private key to your current working directory.
 `clenv add alice`
+
+note: You can also use "add" to rotate your key if an identical name is entered.
 
 ### remove
 remove removes a user from the keyring.
 `clenv remove alice`
 
-# Roadmap
+# Features roadmap
 1. Windows version (without the need for wsl)
 2. Unit testing/integration testing
 3. Database obfuscation so that if you do not have a private key, you cannot read namespaces or entries in the database.
-4. Ability to sync with cloud services such as s3 or other online
+4. Ability to sync with cloud services such as s3 or other online services.
 5. Furhter hardening of features and make it more ergonomic to use (more arguments, flags, better error checking and cleanup of code)
 6. Colored arguments so errors are easier to read
 7. Add properties to recipients (such as read only permissions).
+8. Go from single threaded RocksDB to multithreaded.
+9. Ability to merge users and keys between databases.
+10. Possibly add a TUI or some type of other interactive way to use the toolset?
