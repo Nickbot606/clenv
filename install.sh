@@ -41,7 +41,7 @@ if [ "$PLATFORM" = "windows" ]; then
     mkdir -p "$(dirname "$INSTALL_PATH")"
 fi
 
-mv "/tmp/${BINARY_NAME}${EXT}" "$INSTALL_PATH"
+sudo mv "/tmp/${BINARY_NAME}${EXT}" "$INSTALL_PATH"
 
 echo "Installed $BINARY_NAME to $INSTALL_PATH"
 "$INSTALL_PATH" --help
