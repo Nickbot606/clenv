@@ -49,12 +49,12 @@ pub fn add_all_comm() -> Vec<Command> {
         SubCommand::new(
             "store",
             "Stores the file into the db.",
-            vec![("file", true, EV::NAME),("name", false, EV::NAME)]
+            vec![("file", true, EV::NAME), ("name", false, EV::NAME)],
         ),
         SubCommand::new(
             "dump",
             "dumps all blocks into individual env files from the namespace to current working directory",
             vec![("name", true, EV::NAME)],
-        )
+        ),
     ]
 }

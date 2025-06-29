@@ -66,8 +66,6 @@ impl Config {
 
         let mut ini = Ini::new();
         ini.load(&path)?;
-
-        println!("Read config from: {}", path.display());
         Ok(Config { ini })
     }
 

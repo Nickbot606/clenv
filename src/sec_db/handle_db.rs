@@ -3,28 +3,22 @@ use crate::config::config::Config as Conf;
 use crate::config::resolve_path;
 use rocksdb::{ColumnFamilyDescriptor, DB, Options};
 use rsa::pkcs1::DecodeRsaPrivateKey;
-use rsa::pkcs8::DecodePublicKey;
-use rsa::pkcs8::EncodePublicKey;
-use rsa::{RsaPublicKey,RsaPrivateKey};
+use rsa::pkcs8::{DecodePublicKey, EncodePublicKey};
+use rsa::{RsaPrivateKey, RsaPublicKey};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::error::Error;
-use std::fs::File;
-use std::io::Read;
-use std::path::Path;
-use serde::{Deserialize, Serialize};
 use std::fs;
+use std::fs::File;
+use std::io::{Read, Write};
+use std::path::{Path, PathBuf};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-// pub struct EncryptedValue {
-//     pub ciphertext: Vec<u8>,
-//     pub nonce: [u8; 12],
-//     pub key_shares: HashMap<String, Vec<u8>>,
-// }
-
 pub struct EncryptedEntry {
     pub ciphertext: Vec<u8>,
     pub nonce: [u8; 12],
     pub encrypted_keys: HashMap<String, Vec<u8>>,
+    pub extension: String,
 }
 
 const CONF_ERROR: &str =
@@ -36,11 +30,6 @@ pub struct SecDb {
 }
 
 impl SecDb {
-    /// Creates a new database for configurations - this function runs each time the command line is run.
-    /// First, check to see if db exists create db if it does not exist.
-    /// Second, add keyring as well as generate your keyring confiuration pair.
-    /// Else if all those things exist, then just open them.
-    /// NOTE: THIS FUNCTION ASSUMES THAT YOU HAVE CORRECTLY INITALIZED THE DB. IT WILL NOT HANDLE THE CASE WHERE THE KEYRING IS MISSING.
     pub fn new(conf: Conf) -> SecDb {
         let mut db_opts = Options::default();
         db_opts.create_if_missing(true);
@@ -67,7 +56,8 @@ impl SecDb {
 
         // Keyring is where the recipients are kept. run "clenv show keyring" to see who has access to this database at any time
         db.create_cf("keyring", &Options::default()).unwrap();
-        db.create_cf(conf.get("ns").unwrap(), &Options::default()).unwrap();
+        db.create_cf(conf.get("ns").unwrap(), &Options::default())
+            .unwrap();
         let cf = db.cf_handle("keyring").unwrap();
 
         let key_pair = i_keys::generate_key_pair(&name, &private_key);
@@ -114,22 +104,34 @@ impl SecDb {
     }
 
     /// The meat and potatoes of the whole thing: This stores the file given the ever important filename as a byte stream
-    pub fn store_file(&self, name: &str, filename: &str) {
+    pub fn store_file(&mut self, name: &str, filename: &str) {
         let path = resolve_path(filename, "");
+        let extension = path
+            .extension()
+            .and_then(|s| s.to_str())
+            .unwrap_or("")
+            .to_string();
         let mut file = File::open(&path).expect("Could not open file");
         let mut file_data = Vec::new();
-        file.read_to_end(&mut file_data).expect("Failed to read file");
-
-        println!("File bin:{:?}", file_data);
+        file.read_to_end(&mut file_data)
+            .expect("Failed to read file");
 
         let recipients = self.get_recipients().expect("Failed to fetch recipients");
-        let entry = i_keys::encrypt(&file_data, &recipients).expect("Encryption failed");
+        let entry = i_keys::encrypt(&file_data, &recipients, extension).expect("Encryption failed");
 
         let serialized = bincode::serde::encode_to_vec(&entry, bincode::config::standard())
             .expect("Serialization failed");
 
         let cf_name = self.conf.get("ns").expect("Missing namespace");
-        let cf = self.db.cf_handle(&cf_name).expect("Missing column family");
+        let cf = match self.db.cf_handle(&cf_name) {
+            Some(cf) => cf,
+            None => {
+                self.db.create_cf(&cf_name, &Options::default())
+                    .expect("Failed to create column family");
+
+                self.db.cf_handle(&cf_name).expect("CF creation failed")
+            }
+        };
 
         self.db
             .put_cf(&cf, name.as_bytes(), &serialized)
@@ -143,29 +145,40 @@ impl SecDb {
         let cf_name = self.conf.get("ns").expect("Missing namespace");
         let cf = self.db.cf_handle(&cf_name).expect("Missing column family");
 
-        let value = self.db
+        let value = self
+            .db
             .get_cf(&cf, name.as_bytes())
             .expect("DB read failed")
-            .expect("No entry found for that key");
+            .expect(&format!("No entry found for the {} key", name));
 
         let pem_data = fs::read_to_string(self.conf.get("private_key").unwrap());
         let priv_key = RsaPrivateKey::from_pkcs1_pem(&pem_data.unwrap()).unwrap();
 
         // Next, we need to get the individual values
-        let entry: EncryptedEntry = bincode::serde::decode_from_slice(&value, bincode::config::standard())
-            .expect("Deserialization failed")
-            .0;
+        let entry: EncryptedEntry =
+            bincode::serde::decode_from_slice(&value, bincode::config::standard())
+                .expect("Deserialization failed")
+                .0;
 
         let test = i_keys::decrypt(
             &entry.encrypted_keys[&self.conf.get("name").unwrap()],
             &entry.ciphertext,
             &entry.nonce,
-            &priv_key
+            &priv_key,
         );
 
-        println!("Output: {:?}",test);
+        let mut output_path = PathBuf::from(name);
+        output_path.set_extension(&entry.extension);
+        let mut file = File::create(&output_path).expect(&format!(
+            "Failed to create file. Please check entry with 'clenv show {}",
+            &name
+        ));
 
+        file.write_all(&test.unwrap())
+            .expect("Failed to write output");
+        println!("Successfully wrote to {}", name);
     }
+
 
 
     // This file retrives all the public keys for each recipient of the database
@@ -173,7 +186,7 @@ impl SecDb {
         let ring = self
             .db
             .cf_handle("keyring")
-            .ok_or("Missing 'keyring' column family")?;
+            .ok_or("Missing 'keyring' namespace")?;
         let iter = self.db.iterator_cf(ring, rocksdb::IteratorMode::Start);
         let mut recipients = Vec::new();
 

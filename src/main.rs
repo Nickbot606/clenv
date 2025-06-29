@@ -83,43 +83,37 @@ fn main() {
             let file = sub_matches.get_one::<String>("file");
             let name = sub_matches.get_one::<String>("name");
 
-            let db = SecDb::new(confi.clone());
+            let mut db = SecDb::new(confi.clone());
             match (file, name) {
-                (Some(n),Some(f)) => {
-                    let target_file = resolve_path(f, "")
-                        .into_os_string()
-                        .into_string()
-                        .unwrap();
+                (Some(n), Some(f)) => {
+                    let target_file = resolve_path(f, "").into_os_string().into_string().unwrap();
                     db.store_file(n, &target_file);
-                },
-                (Some(f),None) => {
-                    let target_file = resolve_path(f, "")
-                        .into_os_string()
-                        .into_string()
-                        .unwrap();
+                }
+                (Some(f), None) => {
+                    let target_file = resolve_path(f, "").into_os_string().into_string().unwrap();
                     db.store_file(f, &target_file);
-                },
-                (None,Some(_)) => {
+                }
+                (None, Some(_)) => {
                     eprintln!("File not entered");
-                },
-                (None,None) => {
+                }
+                (None, None) => {
                     eprintln!("Filename not entered");
                 }
             }
-        },
+        }
         Some(("dump", sub_matches)) => {
             let name = sub_matches.get_one::<String>("name");
             let db = SecDb::new(confi.clone());
-            
+
             match name {
                 Some(n) => {
                     db.dump_file(n);
-                },
+                }
                 None => {
                     eprintln!("Missing name of file");
                 }
             }
-        },
+        }
         _ => {
             unreachable!("Exhausted list of subcommands");
         }

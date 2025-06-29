@@ -29,15 +29,73 @@ This configuration file can be found in `~/.config/clenv`
 | --- | --- | --- |
 | db | db="/path/to/db/" | Location of rocksdb folder |
 | ns | ns="current_namespace" | Currently selected namepace (this can also be changed with the `clenv ns` command) |
-| priv | priv="/path/to/.crt" | Location of the private key on local machine |
+| private_key | priv="/path/to/.crt" | Location of the private key on local machine |
 
 ## Arguments and Examples
-| name | interface | example | description |
-| --- | --- | --- | --- |
-| add | clenv add [name] | clenv add "keys.pub" | adds a public key to add the users' keys | 
-| show | clenv show [none] | clenv show | shows the currently selected database, users who have access, and available namespaces | 
-| cfg | clenv cfg [name of key] [argument for keys] | clenv cfg --db "path/to/db" | changes a specific configuration remotely. (Putting just clenv cfg will list current configuration) |
-| ns | clenv ns [name of namespace] | clenv ns "ns" | changes the currently selected namespace. Putting no  |
-| dump | clenv dump [name space name] [name of ouptut file] | clenv dump name_of_db | dumps all blocks into individual env files from the namespace to current working directory |
-| write | clenv write [path to .env] [name of blob] | clenv write "./.env" "default_env" | writes the selected file to the currently selected namespace with a name of your choosing. If you match a blob name exactly, it will overwrite said blob | 
 
+### NOTE:
+If the arugment or command can take in a file path location, it will first check to see if it is a relative or absolute path. If it is neither, it will assume the file is located within the current directory and use the name provided. This makes it so that you can run a command like:
+`clenv store text.txt`
+
+Your configuration file will also be adjusted to reflect the absolute path. So if you start a database in a private directory, it will remove it. 
+
+
+### cfg
+cfg is the inital configuration argument. This argument can be run alone like such: 
+`clenv cfg`
+This will give you a printed list of all of the current configurations.
+
+To individually set one argument, you can run 
+`clenv cfg [argument name] [new arugment value]`
+for example: `clenv cfg ns second_namespace`
+this will change the namespace to "second_namespace"
+
+if you would like to reset all of your configs instead, use 
+`clenv cfg init` and it will reprompt you for your name, private key, and database name.
+
+### store
+store will store the currently selected file. 
+`clenv store test.txt` will store test.txt form the current directory into the currently selected namespace. This will be a different test.txt than a seperate namespace.
+
+This program will first take in the available file, compress it, then encrypt it with your currently conifgured private key, and add it to your currently selected namespace. If you add a second arugment such as `clenv store test.txt test-dev` it will use that name instead as your current file name. Clenv is designed to maintain your current file extension upon storage as well as store the file as an encrypted binary so in theory it could store any file type.
+
+The database can store multiple files of the same name in seperate files, however, it will overwrite one if you are in a currently selected file.
+Also note that if you write a file to a namespace that doesn't exist, it will automatically create said namespace.
+
+**disclaimer**
+The CLI uses zstd for file compression and oaep rsa for encryption. It does not encrypt the file extenion nor does it encrypt the namespaces or names of entries. It does however encrypt all other data it is given.
+
+### show
+show if no other arugments will display all of the currently available namespaces. If you speicfy a namespace after show it will display all the entries for that namespace.
+`clenv show`
+
+`clenv show ns`
+
+Note that if you change your current namespace, it will not create said namespace until you have stored at least one file into that space.
+
+### dump
+dump will write the env/entry to a file. It will use the name of the entry + the file extension it had upon storing it into the database.
+`clenv dump test.txt`
+
+If you have a file which is named identically and you choose to write this file, it will overwrite your current file so please be careful.
+
+### rm
+rm removes the entry from the currently selected namespace. 
+`clenv rm test.txt`
+
+### add
+adds a user to the keyring
+`clenv add alice`
+
+### remove
+remove removes a user from the keyring.
+`clenv remove alice`
+
+# Roadmap
+1. Windows version (without the need for wsl)
+2. Unit testing/integration testing
+3. Database obfuscation so that if you do not have a private key, you cannot read namespaces or entries in the database.
+4. Ability to sync with cloud services such as s3 or other online
+5. Furhter hardening of features and make it more ergonomic to use (more arguments, flags, better error checking and cleanup of code)
+6. Colored arguments so errors are easier to read
+7. Add properties to recipients (such as read only permissions).

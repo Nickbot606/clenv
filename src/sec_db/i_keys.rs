@@ -5,12 +5,12 @@ use rsa::pkcs1::{DecodeRsaPrivateKey, EncodeRsaPrivateKey};
 use rsa::rand_core::RngCore;
 use rsa::{Oaep, RsaPrivateKey, RsaPublicKey};
 use sha2::Sha256;
-use zstd::decode_all;
 use std::collections::HashMap;
 use std::fs;
-use thiserror::Error;
-use zstd::stream::encode_all;
 use std::io::Cursor;
+use thiserror::Error;
+use zstd::decode_all;
+use zstd::stream::encode_all;
 
 pub struct i_keys;
 
@@ -63,7 +63,8 @@ impl i_keys {
     pub fn encrypt(
         message: &[u8],
         recipients: &[(String, RsaPublicKey)],
-    ) -> Result<(Vec<u8>, [u8; 12], HashMap<String, Vec<u8>>), CryptoError> {
+        extension: String,
+    ) -> Result<(Vec<u8>, [u8; 12], HashMap<String, Vec<u8>>, String), CryptoError> {
         let mut rng = OsRng;
         let aes_key = Aes256Gcm::generate_key(&mut rng);
         let cipher = Aes256Gcm::new(&aes_key);
@@ -85,7 +86,7 @@ impl i_keys {
                 pubkey.encrypt(&mut rng, Oaep::new::<Sha256>(), aes_key.as_slice())?;
             encrypted_keys.insert(name.clone(), encrypted_key);
         }
-        Ok((ciphertext, nonce, encrypted_keys))
+        Ok((ciphertext, nonce, encrypted_keys, extension))
     }
 
     // Standard decryption implementation
@@ -100,7 +101,8 @@ impl i_keys {
         let cipher = Aes256Gcm::new(aes_key);
         let decrypted = cipher
             .decrypt(Nonce::from_slice(nonce), ciphertext)
-            .map_err(CryptoError::Aes).unwrap();
+            .map_err(CryptoError::Aes)
+            .unwrap();
         let decompress = Self::decompress_binary(&decrypted);
         Ok(decompress.unwrap())
     }
